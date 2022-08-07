@@ -2,6 +2,7 @@ import yaml
 import logging
 import re
 import paramiko
+import subprocess
 
 
 def yaml_read():
@@ -10,7 +11,20 @@ def yaml_read():
     return config
 
 def install_lvm2(ssh_obj):
-    pass
+    install_cmd = "apt-get install -y lvm2"
+    ssh_obj.obj_SSHClient.exec_command(install_cmd)
+    check_cmd = 'apt-cache policy lvm2'
+    stdin, stdout, stderr = ssh_obj.obj_SSHClient.exec_command(check_cmd)
+    result = (str(stdout.read(),encoding='utf-8'))
+    a = re.findall(r'Installed: ([\w\W]*) Candidate', result)
+    b = a[0]
+    b = b.strip('\n')
+    b = b.strip(' ')
+    if b == '2.03.11-2.1ubuntu4':
+        print('Lvm2 installation succeeded')
+    else:
+        print('Lvm2 version error')
+
 
 class Ssh():
     def __init__(self, ip, password):
@@ -36,22 +50,59 @@ class Ssh():
 
 
 class Mainoperation():
-    def __init__(self):
-        self.primaly = a
-        self.secondary = a
-        self.pvname = a
-        self.vgname = a
-        self.lvname = a
-        self.vgsize = a
-        self.lvsize = a
+    def __init__(self,obj_ssh):
+        self.primaly = yaml_info['disk partition']['primary']
+        self.vgname = 'vgtest'
+        self.lvname = 'lvtest'
+        self.vgsize = yaml_info['basic operation']['vgsize']
+        self.lvsize = yaml_info['basic operation']['lvsize']
+        self.obj_ssh = obj_ssh
 
-    def pv_operation(self,obj_ssh):
-        pass
-        # return status
+    def pv_operation(self):
+        status = False
+        pvcreate_cmd = f'pvcreate {self.primaly}'
+        stdin,stdout,stderr = self.obj_ssh.obj_SSHClient.exec_command(pvcreate_cmd)
+        info = str(stdout.read(),encoding='utf-8')
+        a = re.findall(r'Physical volume “'+self.primaly+'” successfully created',info)
+        if a:
+            print('pvcreate successfully')
+        else:
+            print('pvcreate failed')
+        pvdisplay_cmd = f'pvdisplay {self.primaly}'
+        stdin,stdout,stderr = self.obj_ssh.obj_SSHClient.exec_command(pvdisplay_cmd)
+        info2 = str(stdout.read(),encoding='utf-8')
+        b = re.findall(r'PV Name  '+self.primaly,info2)
+        c = re.findall(r'PV Size  '+self.vgsize+'GiB',info2)
+        if b and c:
+            print('pvdisplay information is correct')
+            status = True
+        else:
+            print('pvdisplay information error')
+
+        return status
 
     def vg_operation(self,obj_ssh):
-        pass
-        # return status
+        status = False
+        pvcreate_cmd = f'vgcreate vgtest {self.primaly}'
+        stdin,stdout,stderr = self.obj_ssh.obj_SSHClient.exec_command(pvcreate_cmd)
+        info = str(stdout.read(),encoding='utf-8')
+        a = re.findall(r'Volume group “vgtest” successfully created',info)
+        if a:
+            print('vgcreate successfully')
+        else:
+            print('vgcreate failed')
+        pvdisplay_cmd = f'vgdisplay vgtest'
+        stdin,stdout,stderr = self.obj_ssh.obj_SSHClient.exec_command(pvdisplay_cmd)
+        info2 = str(stdout.read(),encoding='utf-8')
+        b = re.findall(r'PV Name  '+self.primaly,info2)
+        c = re.findall(r'PV Size  '+self.vgsize,info2)
+        if b and c:
+            print('vgdisplay information is correct')
+            status = True
+        else:
+            print('vgdisplay information error')
+
+        return status
 
     def lv_operation(self,obj_ssh):
         pass
@@ -154,5 +205,5 @@ def main():
 
 
 if __name__ == "__main__":
-    a = yaml_read()
+    yaml_info = yaml_read()
     main()
