@@ -5,26 +5,20 @@ disk partition:
   primary: /dev/sdb4
   secondary: /dev/sdb5
 basic operation:
-  vgname: vgtest
   lvname: lvtest
   vgsize: 100G
   lvsize: 10G
 thin vol:
-  thinpoolname: pooltest
   thinpoolsize: 100G
-  thinvolname: thin_vol
   thinvolsize: 10g
   poolextendsize: 10G
   volextendsize: 2G
   volreducesize: 5G
-  snapshotname: thin_vol_0
 strip vol:
-  stripvolname: lvtest
   stripvolsize: 10G
   stripnumbers: 2
   stripsize: 64
 mirror vol:
-  mirrorvolname: lvmirror
   mirrorvolsize: 100G
   datavol: /dev/sdb4
   replicavol: /dev/sdb5
