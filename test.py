@@ -1,3 +1,5 @@
+import time
+
 import yaml
 import logging
 import re
@@ -22,8 +24,12 @@ def install_lvm2(ssh_obj):
     b = b.strip(' ')
     if b == '2.03.11-2.1ubuntu4':
         print('Lvm2 installation succeeded')
+        status = True
+        return status
     else:
         print('Lvm2 version error')
+        status = False
+        return status
 
 
 class Ssh():
@@ -61,7 +67,7 @@ class Mainoperation():
         pvcreate_cmd = f'pvcreate {self.primary}'
         stdin,stdout,stderr = self.obj_ssh.obj_SSHClient.exec_command(pvcreate_cmd)
         info = str(stdout.read(),encoding='utf-8')
-        a = re.findall(r'Physical volume “'+self.primary+'” successfully created',info)
+        a = re.findall(r'Physical volume "'+self.primary+'" successfully created',info)
         if a:
             print('pvcreate successfully')
         else:
@@ -83,7 +89,7 @@ class Mainoperation():
         vgcreate_cmd = f'vgcreate vgtest {self.primary}'
         stdin,stdout,stderr = self.obj_ssh.obj_SSHClient.exec_command(vgcreate_cmd)
         info = str(stdout.read(),encoding='utf-8')
-        a = re.findall(r'Volume group “vgtest” successfully created',info)
+        a = re.findall(r'Volume group "vgtest" successfully created',info)
         if a:
             print('vgcreate successfully')
         else:
@@ -105,15 +111,15 @@ class Mainoperation():
         lvcreate_cmd = f'lvcreate -L {self.lvsize} -n lvtest vgtest'
         stdin, stdout, stderr = self.obj_ssh.obj_SSHClient.exec_command(lvcreate_cmd)
         info = str(stdout.read(), encoding='utf-8')
-        a = re.findall(r'Logical volume “lvtest” created', info)
+        a = re.findall(r'Logical volume "lvtest" created', info)
         if a:
             print('lvcreate successfully')
         else:
             print('lvcreate failed')
-        lvdisplay_cmd = f'lvdisply /dev/vgtest/lvtest'
+        lvdisplay_cmd = f'lvdisplay /dev/vgtest/lvtest'
         stdin, stdout, stderr = self.obj_ssh.obj_SSHClient.exec_command(lvdisplay_cmd)
         info2 = str(stdout.read(), encoding='utf-8')
-        b = re.findall(r'LV Name\s*lvest', info2)
+        b = re.findall(r'LV Name\s*lvtest', info2)
         if b:
             print('lvdisplay information is correct')
             status = True
@@ -127,7 +133,7 @@ class Mainoperation():
         lvremove_cmd = f'lvremove -y /dev/vgtest/lvtest'
         stdin, stdout, stderr = self.obj_ssh.obj_SSHClient.exec_command(lvremove_cmd)
         info = str(stdout.read(), encoding='utf-8')
-        a = re.findall(r'Logical volume “lvtest” successfully removed', info)
+        a = re.findall(r'Logical volume "lvtest" successfully removed', info)
         if a:
             print('lvremove successfully')
             status = True
@@ -139,7 +145,7 @@ class Mainoperation():
             vgremove_cmd = f'vgremove vgtest'
             stdin, stdout, stderr = self.obj_ssh.obj_SSHClient.exec_command(vgremove_cmd)
             info = str(stdout.read(), encoding='utf-8')
-            b = re.findall(r'Volume group “vgtest” successfully removed', info)
+            b = re.findall(r'Volume group "vgtest" successfully removed', info)
             if b:
                 print('vgremove successfully')
                 status = True
@@ -151,7 +157,7 @@ class Mainoperation():
                 pvremove_cmd = f'pvremove {self.primary}'
                 stdin, stdout, stderr = self.obj_ssh.obj_SSHClient.exec_command(pvremove_cmd)
                 info = str(stdout.read(), encoding='utf-8')
-                c = re.findall(r'Labels on physical volume “'+self.primary+'” successfully wiped', info)
+                c = re.findall(r'Labels on physical volume "'+self.primary+'" successfully wiped', info)
                 if c:
                     print('pvremove successfully')
                     status = True
@@ -166,6 +172,7 @@ class Mainoperation():
             return status
 
 class ThinOperation():
+
     def __init__(self,obj_ssh):
         self.primary = yaml_info['disk partition']['primary']
         self.thinpoolsize = yaml_info['thin vol']['thinpoolsize']
@@ -180,7 +187,7 @@ class ThinOperation():
         pvcreate_cmd = f'pvcreate {self.primary}'
         stdin,stdout,stderr = self.obj_ssh.obj_SSHClient.exec_command(pvcreate_cmd)
         info = str(stdout.read(),encoding='utf-8')
-        a = re.findall(r'Physical volume “'+self.primary+'” successfully created',info)
+        a = re.findall(r'Physical volume "'+self.primary+'" successfully created',info)
         if a:
             print('pvcreate successfully')
         else:
@@ -200,7 +207,7 @@ class ThinOperation():
             vgcreate_cmd = f'vgcreate vgtest {self.primary}'
             stdin, stdout, stderr = self.obj_ssh.obj_SSHClient.exec_command(vgcreate_cmd)
             info = str(stdout.read(), encoding='utf-8')
-            c = re.findall(r'Volume group “vgtest” successfully created', info)
+            c = re.findall(r'Volume group "vgtest" successfully created', info)
             if c:
                 print('vgcreate successfully')
             else:
@@ -225,17 +232,17 @@ class ThinOperation():
                     print('thinpool create successfully')
                 else:
                     print('thinpool create failed')
-                thinpooldisplay_cmd = f'vgdisplay vgtest'
+                thinpooldisplay_cmd = f'lvdisplay /dev/vgtest/pooltest'
                 stdin, stdout, stderr = self.obj_ssh.obj_SSHClient.exec_command(thinpooldisplay_cmd)
                 info2 = str(stdout.read(), encoding='utf-8')
-                f = re.findall(r'LV Name\s*vgtest', info2)
-                g = re.findall(r'LV pool data\s*pooltest_tdata',info2)
+                f = re.findall(r'LV Name\s*pooltest', info2)
+                g = re.findall(r'LV Pool data\s*pooltest_tdata',info2)
                 if f and g:
-                    print('vgdisplay information is correct')
+                    print('thinpool_lvdisplay information is correct')
                     status = True
                     return status
                 else:
-                    print('vgdisplay information error')
+                    print('thinpool_lvdisplay information error')
                     status = False
                     return status
             else:
@@ -253,16 +260,16 @@ class ThinOperation():
             print('thinvol create successfully')
         else:
             print('thinvol create failed')
-        thinvoldisplay_cmd = f'vgdisplay /dev/vgtest/thin_vol'
+        thinvoldisplay_cmd = f'lvdisplay /dev/vgtest/thin_vol'
         stdin, stdout, stderr = self.obj_ssh.obj_SSHClient.exec_command(thinvoldisplay_cmd)
         info2 = str(stdout.read(), encoding='utf-8')
         f = re.findall(r'LV Name\s*thin_vol', info2)
         if f:
-            print('lvdisplay information is correct')
+            print('thin_vol_lvdisplay information is correct')
             status = True
             return status
         else:
-            print('lvdisplay information error')
+            print('thin_vol_lvdisplay information error')
             status = False
             return status
 
@@ -279,7 +286,7 @@ class ThinOperation():
             print('thinvol create failed')
             status = False
         if status is True:
-            thinpoolcheck_cmd = 'display /dev/vgtest/pooltest'
+            thinpoolcheck_cmd = 'lvdisplay /dev/vgtest/pooltest'
             stdin, stdout, stderr = self.obj_ssh.obj_SSHClient.exec_command(thinpoolcheck_cmd)
             info = str(stdout.read(), encoding='utf-8')
             after_extend = str(int(self.thinpoolsize.replace(self.thinpoolsize[-1], '')) + int(self.poolextendsize.replace(self.poolextendsize[-1], '')))
@@ -309,11 +316,13 @@ class ThinOperation():
                         self.volextendsize.replace(self.volextendsize[-1], '')))
                     j = re.findall(r'LV Size\s*' + after_extend, info)
                     if j:
-                        print('thinvol extend successfully')
+                        print('thinvol_display extend successfully')
                         status = True
+                        return status
                     else:
-                        print('thinvol extend failed')
+                        print('thinvol_display extend failed')
                         status = False
+                        return status
                 else:
                     return status
             else:
@@ -334,7 +343,8 @@ class ThinOperation():
         thinpoolreducecheck_cmd = f'lvdisplay /dev/vgtest/thin_vol'
         stdin, stdout, stderr = self.obj_ssh.obj_SSHClient.exec_command(thinpoolreducecheck_cmd)
         info = str(stdout.read(), encoding='utf-8')
-        l = re.findall(r'LV Size\s*' + self.volreducesize, info)
+        size_number = str(self.volreducesize.replace(self.volreducesize[-1], ''))
+        l = re.findall(r'LV Size\s*' + size_number, info)
         if l:
             print('thinvol reduce successfully')
             status = True
@@ -346,10 +356,10 @@ class ThinOperation():
 
     def snapshot_create(self):
         status = False
-        thinpoolreduce_cmd = f'lvcreate -L {self.volreducesize} –-snapshot –-name thin_vol0 vgtest/thin_vol'
+        thinpoolreduce_cmd = f'lvcreate -L {self.volreducesize} --snapshot --name thin_vol0 vgtest/thin_vol'
         stdin, stdout, stderr = self.obj_ssh.obj_SSHClient.exec_command(thinpoolreduce_cmd)
         info = str(stdout.read(), encoding='utf-8')
-        m = re.findall(r'Logical volume “thin_vol0” created', info)
+        m = re.findall(r'Logical volume "thin_vol0" created', info)
         if m:
             print('thinvol_snapshot create successfully')
         else:
@@ -357,12 +367,12 @@ class ThinOperation():
         thinvol_snapshot_check_cmd = f'lvdisplay /dev/vgtest/thin_vol0'
         stdin, stdout, stderr = self.obj_ssh.obj_SSHClient.exec_command(thinvol_snapshot_check_cmd)
         info = str(stdout.read(), encoding='utf-8')
-        n = re.findall(r'LV Size\s*' + self.volreducesize, info)
+        n = re.findall(r'LV Name\s*thin_vol0', info)
         if n:
-            print('thinvol_snapshot create successfully')
+            print('thinvol_snapshot_lvdisplay create successfully')
             status = True
         else:
-            print('thinvol_snapshot create failed')
+            print('thinvol_snapshot_lvdisplay create failed')
             status = False
         return status
 
@@ -370,7 +380,7 @@ class ThinOperation():
         thinvol_snapshotremove_cmd = f'lvremove -y /dev/vgtest/thin_vol0'
         stdin, stdout, stderr = self.obj_ssh.obj_SSHClient.exec_command(thinvol_snapshotremove_cmd)
         info = str(stdout.read(), encoding='utf-8')
-        a = re.findall(r'Logical volume “thin_vol0” successfully removed', info)
+        a = re.findall(r'Logical volume "thin_vol0" successfully removed', info)
         if a:
             print('thin_vol0_snapshot remove successfully')
             status = True
@@ -381,18 +391,18 @@ class ThinOperation():
             thinvol_remove_cmd = f'lvremove -y /dev/vgtest/thin_vol'
             stdin, stdout, stderr = self.obj_ssh.obj_SSHClient.exec_command(thinvol_remove_cmd)
             info = str(stdout.read(), encoding='utf-8')
-            b = re.findall(r'Logical volume “thin_vol” successfully removed', info)
+            b = re.findall(r'Logical volume "thin_vol" successfully removed', info)
             if b:
-                print('thin_vol0_snapshot remove successfully')
+                print('thin_vol_snapshot remove successfully')
                 status = True
             else:
-                print('thin_vol0_snapshot remove failed')
+                print('thin_vol_snapshot remove failed')
                 status = False
             if status is True:
                 thinpool_remove_cmd = f'lvremove -y /dev/vgtest/pooltest'
                 stdin, stdout, stderr = self.obj_ssh.obj_SSHClient.exec_command(thinpool_remove_cmd)
                 info = str(stdout.read(), encoding='utf-8')
-                b = re.findall(r'Logical volume “pooltest” successfully removed', info)
+                b = re.findall(r'Logical volume "pooltest" successfully removed', info)
                 if b:
                     print('thin_pool remove successfully')
                     status = True
@@ -403,13 +413,13 @@ class ThinOperation():
                     vgremove_cmd = f'vgremove -y vgtest'
                     stdin, stdout, stderr = self.obj_ssh.obj_SSHClient.exec_command(vgremove_cmd)
                     info = str(stdout.read(), encoding='utf-8')
-                    b = re.findall(r'Volume group “vgtest” successfully removed', info)
+                    b = re.findall(r'Volume group "vgtest" successfully removed', info)
                     if b:
-                        print('thin_vol0_snapshot remove successfully')
+                        print('vg remove successfully')
                         status = True
                         return status
                     else:
-                        print('thin_vol0_snapshot remove failed')
+                        print('vg remove failed')
                         status = False
                         return status
                 else:
@@ -434,7 +444,7 @@ class StripOperation():
         pvcreate_cmd = f'pvcreate {self.secondary}'
         stdin,stdout,stderr = self.obj_ssh.obj_SSHClient.exec_command(pvcreate_cmd)
         info = str(stdout.read(),encoding='utf-8')
-        a = re.findall(r'Physical volume “'+self.secondary+'” successfully created',info)
+        a = re.findall(r'Physical volume "'+self.secondary+'" successfully created',info)
         if a:
             print('secondary_pvcreate successfully')
             status = True
@@ -445,7 +455,7 @@ class StripOperation():
             vgcreate_cmd = f'vgcreate vgtest {self.primary} {self.secondary}'
             stdin, stdout, stderr = self.obj_ssh.obj_SSHClient.exec_command(vgcreate_cmd)
             info = str(stdout.read(), encoding='utf-8')
-            a = re.findall(r'Volume group “vgtest” successfully created', info)
+            a = re.findall(r'Volume group "vgtest" successfully created', info)
             if a:
                 print('vgcreate successfully')
                 status = True
@@ -453,17 +463,17 @@ class StripOperation():
                 print('vgcreate failed')
                 status = False
             if status is True:
-                lvcreate_cmd = f'lvcreate -L {self.stripvolsize} -i {self.stripnumbers} -I {self.stripsize} –n lvtest vgtest'
+                lvcreate_cmd = f'lvcreate -L {self.stripvolsize} -i {self.stripnumbers} -I {self.stripsize} -n lvtest vgtest'
                 stdin, stdout, stderr = self.obj_ssh.obj_SSHClient.exec_command(lvcreate_cmd)
                 info = str(stdout.read(), encoding='utf-8')
-                a = re.findall(r'Logical volume “lvtest” created', info)
+                a = re.findall(r'Logical volume "lvtest" created', info)
                 if a:
                     print('strip_lvcreate successfully')
                     status = True
                     return status
                 else:
                     print('strip_lvcreate failed')
-                    status = True
+                    status = False
                     return status
             else:
                 return status
@@ -471,52 +481,193 @@ class StripOperation():
             return status
 
     def stripvol_check(self):
-        pass
+        status = False
+        stripcheck_cmd = f'lsblk'
+        stdin,stdout,stderr = self.obj_ssh.obj_SSHClient.exec_command(stripcheck_cmd)
+        info = str(stdout.read(),encoding='utf-8')
+        a = re.findall(r'vgtest-lvtest',info)
+        if len(a) == 2:
+            print('strip check successfully')
+            status = True
+            return status
+        else:
+            print('secondary check failed')
+            status = False
+            return status
 
-    def delete_operation(self,obj_ssh):
-        pass
-        # return status
+    def delete_operation(self):
+        status = False
+        lvremove_cmd = f'lvremove -y /dev/vgtest/lvtest'
+        stdin, stdout, stderr = self.obj_ssh.obj_SSHClient.exec_command(lvremove_cmd)
+        info = str(stdout.read(), encoding='utf-8')
+        a = re.findall(r'Logical volume "lvtest" successfully removed', info)
+        if a:
+            print('lvremove successfully')
+            status = True
+            return status
+        else:
+            print('lvremove failed')
+            status = False
+            return status
+
 
 class MirrorOperation():
-    def __init__(self):
-        self.mirrorvolname = a
-        self.mirrorvolsize = a
-        self.datavol = a
-        self.replicavol = a
+    def __init__(self,obj_ssh):
+        self.secondary = yaml_info['disk partition']['secondary']
+        self.primary = yaml_info['disk partition']['primary']
+        self.mirrorvolsize = yaml_info['mirror vol']['mirrorvolsize']
+        self.datavol = yaml_info['mirror vol']['datavol']
+        self.replicavol = yaml_info['mirror vol']['replicavol']
+        self.obj_ssh = obj_ssh
 
-    def mirrorvol_create(self,obj_ssh):
-        pass
-        # return status
+    def mirrorvol_create(self):
+        status = False
+        lvcreate_cmd = f'lvcreate -L {self.mirrorvolsize} -m1 -n lvmirror vgtest {self.datavol} {self.replicavol}'
+        stdin, stdout, stderr = self.obj_ssh.obj_SSHClient.exec_command(lvcreate_cmd)
+        info = str(stdout.read(), encoding='utf-8')
+        a = re.findall(r'Logical volume "lvmirror" created', info)
+        if a:
+            print('mirror create successfully')
+            status = True
+            return status
+        else:
+            print('mirror create failed')
+            status = False
+            return status
 
-    def delete_operation(self,obj_ssh):
-        pass
-        # return status
+    def mirrorvol_check(self):
+        status = False
+        lvcheck_cmd = f'lvs -a -o +devices'
+        stdin, stdout, stderr = self.obj_ssh.obj_SSHClient.exec_command(lvcheck_cmd)
+        info = str(stdout.read(), encoding='utf-8')
+        a = re.findall(r'lvmirror', info)
+        if len(a) == 7:
+            print('mirror check successfully')
+            status = True
+            return status
+        else:
+            print('mirror check failed')
+            status = False
+            return status
+
+    def delete_operation(self):
+        status = False
+        lvremove_cmd = f'lvremove -y /dev/vgtest/lvmirror'
+        stdin, stdout, stderr = self.obj_ssh.obj_SSHClient.exec_command(lvremove_cmd)
+        info = str(stdout.read(), encoding='utf-8')
+        a = re.findall(r'Logical volume "lvmirror" successfully removed', info)
+        if a:
+            print('lvremove successfully')
+            status = True
+        else:
+            print('lvremove failed')
+            status = False
+
+        if status is True:
+            vgremove_cmd = f'vgremove vgtest'
+            stdin, stdout, stderr = self.obj_ssh.obj_SSHClient.exec_command(vgremove_cmd)
+            info = str(stdout.read(), encoding='utf-8')
+            b = re.findall(r'Volume group "vgtest" successfully removed', info)
+            if b:
+                print('vgremove successfully')
+                status = True
+            else:
+                print('vgremove failed')
+                status = False
+
+            if status is True:
+                pvremove_cmd = f'pvremove {self.primary}'
+                stdin, stdout, stderr = self.obj_ssh.obj_SSHClient.exec_command(pvremove_cmd)
+                info = str(stdout.read(), encoding='utf-8')
+                c = re.findall(r'Labels on physical volume "'+self.primary+'" successfully wiped', info)
+                pvremove_cmd_1 = f'pvremove {self.secondary}'
+                stdin, stdout, stderr = self.obj_ssh.obj_SSHClient.exec_command(pvremove_cmd_1)
+                info2 = str(stdout.read(), encoding='utf-8')
+                d = re.findall(r'Labels on physical volume "'+self.secondary+'" successfully wiped', info2)
+                if c and d:
+                    print('pvremove successfully')
+                    print('the program ends')
+                    status = True
+                    return status
+                else:
+                    print('pvremove failed')
+                    status = False
+                    return status
+            else:
+                return status
+        else:
+            return status
 
 def main():
-    ip = a['node']['ip']
-    passwd = a['node']['password']
+    ip = yaml_info['node']['ip']
+    passwd = yaml_info['node']['password']
 
-    ssh_obj = Ssh(ip,passwd)
-    main_operation_obj = Mainoperation()
-    thin_operation_obj = ThinOperation()
-    strip_operation_obj = StripOperation()
-    mirror_operation_obj = MirrorOperation()
+    obj_ssh = Ssh(ip,passwd)
+    main_operation_obj = Mainoperation(obj_ssh)
+    thin_operation_obj = ThinOperation(obj_ssh)
+    strip_operation_obj = StripOperation(obj_ssh)
+    mirror_operation_obj = MirrorOperation(obj_ssh)
 
-    step1 = install_lvm2(ssh_obj)
-    step2 = main_operation_obj.pv_operation(ssh_obj)
-    step3 = main_operation_obj.vg_operation(ssh_obj)
-    step4 = main_operation_obj.lv_operation(ssh_obj)
-    step5 = main_operation_obj.delete_operation(ssh_obj)
-    step6 = thin_operation_obj.thinpool_create(ssh_obj)
-    step7 = thin_operation_obj.thinvol_create(ssh_obj)
-    step8 = thin_operation_obj.extend_operation(ssh_obj)
-    step9 = thin_operation_obj.reduce_operation(ssh_obj)
-    step10 = thin_operation_obj.snapshot_create(ssh_obj)
-    step11 = thin_operation_obj.delete_operation(ssh_obj)
-    step12 = strip_operation_obj.stripvol_create(ssh_obj)
-    step13 = strip_operation_obj.delete_operation(ssh_obj)
-    step14 = mirror_operation_obj.mirrorvol_create(ssh_obj)
-    step15 = mirror_operation_obj.delete_operation(ssh_obj)
+
+    if not install_lvm2(obj_ssh):
+        exit()
+    time.sleep(1)
+    if not main_operation_obj.pv_operation():
+        exit()
+    time.sleep(1)
+    if not main_operation_obj.vg_operation():
+        exit()
+    time.sleep(1)
+    if not main_operation_obj.lv_operation():
+        exit()
+    time.sleep(1)
+    if not main_operation_obj.delete_operation():
+        exit()
+    time.sleep(1)
+    if not thin_operation_obj.thinpool_create():        #bug
+        exit()
+    time.sleep(1)
+    if not thin_operation_obj.thinvol_create():
+        exit()
+    time.sleep(1)
+    if not thin_operation_obj.extend_operation():
+        exit()
+    time.sleep(1)
+    if not thin_operation_obj.reduce_operation():
+        exit()
+    time.sleep(1)
+    if not thin_operation_obj.snapshot_create():
+        exit()
+    time.sleep(1)
+    if not thin_operation_obj.delete_operation():
+        exit()
+    time.sleep(1)
+    if not strip_operation_obj.stripvol_create():
+        exit()
+    time.sleep(1)
+    if not strip_operation_obj.stripvol_check():
+        exit()
+    time.sleep(1)
+    if not strip_operation_obj.delete_operation():
+        exit()
+    time.sleep(1)
+    if not mirror_operation_obj.mirrorvol_create():
+        exit()
+    time.sleep(1)
+    if not mirror_operation_obj.mirrorvol_check():
+        exit()
+    time.sleep(1)
+    if not mirror_operation_obj.delete_operation():
+        exit()
+
+    # fun_list = ['main_operation_obj.pv_operation','main_operation_obj.vg_operation','main_operation_obj.lv_operation','main_operation_obj.delete_operation']
+    # for i in fun_list:
+    #     func = eval(i)
+    #     stats = func()
+    #     if stats is True:
+    #         pass
+    #     else:
+    #         break
 
 
 if __name__ == "__main__":
