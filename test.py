@@ -1,5 +1,5 @@
 import time
-
+import datetime
 import yaml
 import logging
 import re
@@ -24,10 +24,12 @@ def install_lvm2(ssh_obj):
     b = b.strip(' ')
     if b == '2.03.11-2.1ubuntu4':
         print('Lvm2 installation succeeded')
+        logging.info('  lvm2安装成功/版本正确')
         status = True
         return status
     else:
         print('Lvm2 version error')
+        logging.info('  lvm2安装失败/版本错误')
         status = False
         return status
 
@@ -50,6 +52,7 @@ class Ssh():
                                        password=self.password, )
         except:
             print("SSH connection failed,please check the hostname or password")
+            logging.info('  ssh连接失败')
 
     def close(self):
         self.obj_SSHClient.close()
@@ -61,6 +64,7 @@ class Mainoperation():
         self.vgsize = yaml_info['basic operation']['vgsize']
         self.lvsize = yaml_info['basic operation']['lvsize']
         self.obj_ssh = obj_ssh
+        logging.info('  开始进行基本操作测试')
 
     def pv_operation(self):
         status = False
@@ -78,9 +82,11 @@ class Mainoperation():
         b = re.findall(r'PV Name\s*'+self.primary,info2)
         if b :
             print('pvdisplay information is correct')
+            logging.info('      pv创建成功')
             status = True
         else:
             print('pvdisplay information error')
+            logging.info('      pv创建失败')
 
         return status
 
@@ -100,9 +106,11 @@ class Mainoperation():
         b = re.findall(r'VG Name\s*vgtest',info2)
         if b :
             print('vgdisplay information is correct')
+            logging.info('      vg创建成功')
             status = True
         else:
             print('vgdisplay information error')
+            logging.info('      vg创建失败')
 
         return status
 
@@ -122,9 +130,11 @@ class Mainoperation():
         b = re.findall(r'LV Name\s*lvtest', info2)
         if b:
             print('lvdisplay information is correct')
+            logging.info('      lv创建成功')
             status = True
         else:
             print('lvdisplay information error')
+            logging.info('      lv创建失败')
 
         return status
 
@@ -161,9 +171,11 @@ class Mainoperation():
                 if c:
                     print('pvremove successfully')
                     status = True
+                    logging.info('      删除流程成功')
                     return status
                 else:
                     print('pvremove failed')
+                    logging.info('      删除流程失败')
                     status = False
                     return status
             else:
@@ -181,6 +193,7 @@ class ThinOperation():
         self.volextendsize = yaml_info['thin vol']['volextendsize']
         self.volreducesize = yaml_info['thin vol']['volreducesize']
         self.obj_ssh = obj_ssh
+        logging.info('  开始进行精简卷配置测试')
 
     def thinpool_create(self):
         status = False
@@ -240,9 +253,11 @@ class ThinOperation():
                 if f and g:
                     print('thinpool_lvdisplay information is correct')
                     status = True
+                    logging.info('      精简池创建成功')
                     return status
                 else:
                     print('thinpool_lvdisplay information error')
+                    logging.info('      精简池创建失败')
                     status = False
                     return status
             else:
@@ -267,9 +282,11 @@ class ThinOperation():
         if f:
             print('thin_vol_lvdisplay information is correct')
             status = True
+            logging.info('      精简卷创建成功')
             return status
         else:
             print('thin_vol_lvdisplay information error')
+            logging.info('      精简卷创建失败')
             status = False
             return status
 
@@ -293,9 +310,11 @@ class ThinOperation():
             j = re.findall(r'LV Size\s*'+after_extend, info)
             if j:
                 print('thinpool extend successfully')
+                logging.info('      精简池扩容成功')
                 status = True
             else:
                 print('thinpool extend failed')
+                logging.info('      精简池扩容失败')
                 status = False
             if status is True:
                 thinvolextend_cmd = f'lvextend -L +'+self.volextendsize+' vgtest/thin_vol'
@@ -317,10 +336,12 @@ class ThinOperation():
                     j = re.findall(r'LV Size\s*' + after_extend, info)
                     if j:
                         print('thinvol_display extend successfully')
+                        logging.info('      精简卷扩容成功')
                         status = True
                         return status
                     else:
                         print('thinvol_display extend failed')
+                        logging.info('      精简卷扩容失败')
                         status = False
                         return status
                 else:
@@ -347,9 +368,11 @@ class ThinOperation():
         l = re.findall(r'LV Size\s*' + size_number, info)
         if l:
             print('thinvol reduce successfully')
+            logging.info('      精简卷缩小成功')
             status = True
         else:
             print('thinvol reduce failed')
+            logging.info('      精简卷缩小失败')
             status = False
         return status
 
@@ -370,9 +393,11 @@ class ThinOperation():
         n = re.findall(r'LV Name\s*thin_vol0', info)
         if n:
             print('thinvol_snapshot_lvdisplay create successfully')
+            logging.info('      精简卷快照创建成功')
             status = True
         else:
             print('thinvol_snapshot_lvdisplay create failed')
+            logging.info('      精简卷快照创建失败')
             status = False
         return status
 
@@ -416,10 +441,12 @@ class ThinOperation():
                     b = re.findall(r'Volume group "vgtest" successfully removed', info)
                     if b:
                         print('vg remove successfully')
+                        logging.info('      精简卷操作删除成功')
                         status = True
                         return status
                     else:
                         print('vg remove failed')
+                        logging.info('      精简卷操作删除失败')
                         status = False
                         return status
                 else:
@@ -438,6 +465,7 @@ class StripOperation():
         self.secondary = yaml_info['disk partition']['secondary']
         self.primary = yaml_info['disk partition']['primary']
         self.obj_ssh = obj_ssh
+        logging.info('  开始进行条带卷配置测试')
 
     def stripvol_create(self):
         status = False
@@ -469,10 +497,12 @@ class StripOperation():
                 a = re.findall(r'Logical volume "lvtest" created', info)
                 if a:
                     print('strip_lvcreate successfully')
+                    logging.info('      条带卷创建成功')
                     status = True
                     return status
                 else:
                     print('strip_lvcreate failed')
+                    logging.info('      条带卷创建失败')
                     status = False
                     return status
             else:
@@ -503,10 +533,12 @@ class StripOperation():
         a = re.findall(r'Logical volume "lvtest" successfully removed', info)
         if a:
             print('lvremove successfully')
+            logging.info('      条带卷删除成功')
             status = True
             return status
         else:
             print('lvremove failed')
+            logging.info('      条带卷删除失败')
             status = False
             return status
 
@@ -519,6 +551,7 @@ class MirrorOperation():
         self.datavol = yaml_info['mirror vol']['datavol']
         self.replicavol = yaml_info['mirror vol']['replicavol']
         self.obj_ssh = obj_ssh
+        logging.info('  开始进行镜像卷配置测试')
 
     def mirrorvol_create(self):
         status = False
@@ -528,10 +561,12 @@ class MirrorOperation():
         a = re.findall(r'Logical volume "lvmirror" created', info)
         if a:
             print('mirror create successfully')
+            logging.info('      镜像卷创建成功')
             status = True
             return status
         else:
             print('mirror create failed')
+            logging.info('      镜像卷创建失败')
             status = False
             return status
 
@@ -558,9 +593,11 @@ class MirrorOperation():
         a = re.findall(r'Logical volume "lvmirror" successfully removed', info)
         if a:
             print('lvremove successfully')
+            logging.info('      镜像卷删除成功')
             status = True
         else:
             print('lvremove failed')
+            logging.info('      镜像卷删除失败')
             status = False
 
         if status is True:
@@ -587,10 +624,12 @@ class MirrorOperation():
                 if c and d:
                     print('pvremove successfully')
                     print('the program ends')
+                    logging.info('  环境处理完成，程序结束')
                     status = True
                     return status
                 else:
                     print('pvremove failed')
+                    logging.info('  环境处理异常，程序结束')
                     status = False
                     return status
             else:
@@ -598,9 +637,17 @@ class MirrorOperation():
         else:
             return status
 
+def log():
+    time1 = datetime.datetime.now().strftime('%Y%m%d %H_%M_%S')
+    # 此处进行Logging.basicConfig() 设置，后面设置无效
+    logging.basicConfig(filename=f'{time1} log.txt',
+                     format = '%(asctime)s - %(name)s - %(levelname)s - %(message)s-%(funcName)s',
+                     level=logging.INFO)
+
 def main():
     ip = yaml_info['node']['ip']
     passwd = yaml_info['node']['password']
+    log()
 
     obj_ssh = Ssh(ip,passwd)
     main_operation_obj = Mainoperation(obj_ssh)
