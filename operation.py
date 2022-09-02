@@ -1,30 +1,42 @@
 import logging
 import re
-from main import yaml_info
+import yaml
 
-def install_lvm2(ssh_obj):
-    install_cmd = "apt-get install -y lvm2"
-    ssh_obj.obj_SSHClient.exec_command(install_cmd)
-    check_cmd = 'apt-cache policy lvm2'
-    stdin, stdout, stderr = ssh_obj.obj_SSHClient.exec_command(check_cmd)
-    result = (str(stdout.read(),encoding='utf-8'))
-    a = re.findall(r'Installed: ([\w\W]*) Candidate', result)
-    b = a[0]
-    b = b.strip('\n')
-    b = b.strip(' ')
-    if b == '2.03.11-2.1ubuntu4':
-        print('Lvm2 installation succeeded')
-        logging.info('  lvm2安装成功/版本正确')
-        status = True
-        return status
-    else:
-        print('Lvm2 version error')
-        logging.info('  lvm2安装失败/版本错误')
-        status = False
-        return status
 
-class Mainoperation():
+def yaml_read():
+    with open('config.yaml') as f:
+        config = yaml.safe_load(f)
+    return config
+
+
+class Lvm2Operation():
     def __init__(self,obj_ssh):
+        self.ssh_obj = obj_ssh
+
+    def install_lvm2(self):
+        install_cmd = "apt-get install -y lvm2"
+        self.ssh_obj.obj_SSHClient.exec_command(install_cmd)
+        check_cmd = 'apt-cache policy lvm2'
+        stdin, stdout, stderr = self.ssh_obj.obj_SSHClient.exec_command(check_cmd)
+        result = (str(stdout.read(), encoding='utf-8'))
+        a = re.findall(r'Installed: ([\w\W]*) Candidate', result)
+        b = a[0]
+        b = b.strip('\n')
+        b = b.strip(' ')
+        if b == '2.03.11-2.1ubuntu4':
+            print('Lvm2 installation succeeded')
+            logging.info('  lvm2安装成功/版本正确')
+            status = True
+            return status
+        else:
+            print('Lvm2 version error')
+            logging.info('  lvm2安装失败/版本错误')
+            status = False
+            return status
+
+
+class MainOperation():
+    def __init__(self, obj_ssh,yaml_info):
         self.primary = yaml_info['disk partition']['primary']
         self.vgsize = yaml_info['basic operation']['vgsize']
         self.lvsize = yaml_info['basic operation']['lvsize']
@@ -34,18 +46,18 @@ class Mainoperation():
     def pv_operation(self):
         status = False
         pvcreate_cmd = f'pvcreate {self.primary}'
-        stdin,stdout,stderr = self.obj_ssh.obj_SSHClient.exec_command(pvcreate_cmd)
-        info = str(stdout.read(),encoding='utf-8')
-        a = re.findall(r'Physical volume "'+self.primary+'" successfully created',info)
+        stdin, stdout, stderr = self.obj_ssh.obj_SSHClient.exec_command(pvcreate_cmd)
+        info = str(stdout.read(), encoding='utf-8')
+        a = re.findall(r'Physical volume "' + self.primary + '" successfully created', info)
         if a:
             print('pvcreate successfully')
         else:
             print('pvcreate failed')
         pvdisplay_cmd = f'pvdisplay {self.primary}'
-        stdin,stdout,stderr = self.obj_ssh.obj_SSHClient.exec_command(pvdisplay_cmd)
-        info2 = str(stdout.read(),encoding='utf-8')
-        b = re.findall(r'PV Name\s*'+self.primary,info2)
-        if b :
+        stdin, stdout, stderr = self.obj_ssh.obj_SSHClient.exec_command(pvdisplay_cmd)
+        info2 = str(stdout.read(), encoding='utf-8')
+        b = re.findall(r'PV Name\s*' + self.primary, info2)
+        if b:
             print('pvdisplay information is correct')
             logging.info('      pv创建成功')
             status = True
@@ -58,18 +70,18 @@ class Mainoperation():
     def vg_operation(self):
         status = False
         vgcreate_cmd = f'vgcreate vgtest {self.primary}'
-        stdin,stdout,stderr = self.obj_ssh.obj_SSHClient.exec_command(vgcreate_cmd)
-        info = str(stdout.read(),encoding='utf-8')
-        a = re.findall(r'Volume group "vgtest" successfully created',info)
+        stdin, stdout, stderr = self.obj_ssh.obj_SSHClient.exec_command(vgcreate_cmd)
+        info = str(stdout.read(), encoding='utf-8')
+        a = re.findall(r'Volume group "vgtest" successfully created', info)
         if a:
             print('vgcreate successfully')
         else:
             print('vgcreate failed')
         vgdisplay_cmd = f'vgdisplay vgtest'
-        stdin,stdout,stderr = self.obj_ssh.obj_SSHClient.exec_command(vgdisplay_cmd)
-        info2 = str(stdout.read(),encoding='utf-8')
-        b = re.findall(r'VG Name\s*vgtest',info2)
-        if b :
+        stdin, stdout, stderr = self.obj_ssh.obj_SSHClient.exec_command(vgdisplay_cmd)
+        info2 = str(stdout.read(), encoding='utf-8')
+        b = re.findall(r'VG Name\s*vgtest', info2)
+        if b:
             print('vgdisplay information is correct')
             logging.info('      vg创建成功')
             status = True
@@ -132,7 +144,7 @@ class Mainoperation():
                 pvremove_cmd = f'pvremove {self.primary}'
                 stdin, stdout, stderr = self.obj_ssh.obj_SSHClient.exec_command(pvremove_cmd)
                 info = str(stdout.read(), encoding='utf-8')
-                c = re.findall(r'Labels on physical volume "'+self.primary+'" successfully wiped', info)
+                c = re.findall(r'Labels on physical volume "' + self.primary + '" successfully wiped', info)
                 if c:
                     print('pvremove successfully')
                     status = True
@@ -148,9 +160,10 @@ class Mainoperation():
         else:
             return status
 
+
 class ThinOperation():
 
-    def __init__(self,obj_ssh):
+    def __init__(self, obj_ssh,yaml_info):
         self.primary = yaml_info['disk partition']['primary']
         self.thinpoolsize = yaml_info['thin vol']['thinpoolsize']
         self.thinvolsize = yaml_info['thin vol']['thinvolsize']
@@ -163,18 +176,18 @@ class ThinOperation():
     def thinpool_create(self):
         status = False
         pvcreate_cmd = f'pvcreate {self.primary}'
-        stdin,stdout,stderr = self.obj_ssh.obj_SSHClient.exec_command(pvcreate_cmd)
-        info = str(stdout.read(),encoding='utf-8')
-        a = re.findall(r'Physical volume "'+self.primary+'" successfully created',info)
+        stdin, stdout, stderr = self.obj_ssh.obj_SSHClient.exec_command(pvcreate_cmd)
+        info = str(stdout.read(), encoding='utf-8')
+        a = re.findall(r'Physical volume "' + self.primary + '" successfully created', info)
         if a:
             print('pvcreate successfully')
         else:
             print('pvcreate failed')
         pvdisplay_cmd = f'pvdisplay {self.primary}'
-        stdin,stdout,stderr = self.obj_ssh.obj_SSHClient.exec_command(pvdisplay_cmd)
-        info2 = str(stdout.read(),encoding='utf-8')
-        b = re.findall(r'PV Name\s*'+self.primary,info2)
-        if b :
+        stdin, stdout, stderr = self.obj_ssh.obj_SSHClient.exec_command(pvdisplay_cmd)
+        info2 = str(stdout.read(), encoding='utf-8')
+        b = re.findall(r'PV Name\s*' + self.primary, info2)
+        if b:
             print('pvdisplay information is correct')
             status = True
         else:
@@ -214,7 +227,7 @@ class ThinOperation():
                 stdin, stdout, stderr = self.obj_ssh.obj_SSHClient.exec_command(thinpooldisplay_cmd)
                 info2 = str(stdout.read(), encoding='utf-8')
                 f = re.findall(r'LV Name\s*pooltest', info2)
-                g = re.findall(r'LV Pool data\s*pooltest_tdata',info2)
+                g = re.findall(r'LV Pool data\s*pooltest_tdata', info2)
                 if f and g:
                     print('thinpool_lvdisplay information is correct')
                     status = True
@@ -271,8 +284,9 @@ class ThinOperation():
             thinpoolcheck_cmd = 'lvdisplay /dev/vgtest/pooltest'
             stdin, stdout, stderr = self.obj_ssh.obj_SSHClient.exec_command(thinpoolcheck_cmd)
             info = str(stdout.read(), encoding='utf-8')
-            after_extend = str(int(self.thinpoolsize.replace(self.thinpoolsize[-1], '')) + int(self.poolextendsize.replace(self.poolextendsize[-1], '')))
-            j = re.findall(r'LV Size\s*'+after_extend, info)
+            after_extend = str(int(self.thinpoolsize.replace(self.thinpoolsize[-1], '')) + int(
+                self.poolextendsize.replace(self.poolextendsize[-1], '')))
+            j = re.findall(r'LV Size\s*' + after_extend, info)
             if j:
                 print('thinpool extend successfully')
                 logging.info('      精简池扩容成功')
@@ -282,7 +296,7 @@ class ThinOperation():
                 logging.info('      精简池扩容失败')
                 status = False
             if status is True:
-                thinvolextend_cmd = f'lvextend -L +'+self.volextendsize+' vgtest/thin_vol'
+                thinvolextend_cmd = f'lvextend -L +' + self.volextendsize + ' vgtest/thin_vol'
                 stdin, stdout, stderr = self.obj_ssh.obj_SSHClient.exec_command(thinvolextend_cmd)
                 info = str(stdout.read(), encoding='utf-8')
                 i = re.findall(r'Logical volume vgtest/thin_vol successfully resized', info)
@@ -340,7 +354,6 @@ class ThinOperation():
             logging.info('      精简卷缩小失败')
             status = False
         return status
-
 
     def snapshot_create(self):
         status = False
@@ -421,8 +434,9 @@ class ThinOperation():
         else:
             return status
 
+
 class StripOperation():
-    def __init__(self,obj_ssh):
+    def __init__(self, obj_ssh,yaml_info):
         self.stripvolsize = yaml_info['strip vol']['stripvolsize']
         self.stripnumbers = yaml_info['strip vol']['stripnumbers']
         self.stripsize = yaml_info['strip vol']['stripsize']
@@ -434,9 +448,9 @@ class StripOperation():
     def stripvol_create(self):
         status = False
         pvcreate_cmd = f'pvcreate {self.secondary}'
-        stdin,stdout,stderr = self.obj_ssh.obj_SSHClient.exec_command(pvcreate_cmd)
-        info = str(stdout.read(),encoding='utf-8')
-        a = re.findall(r'Physical volume "'+self.secondary+'" successfully created',info)
+        stdin, stdout, stderr = self.obj_ssh.obj_SSHClient.exec_command(pvcreate_cmd)
+        info = str(stdout.read(), encoding='utf-8')
+        a = re.findall(r'Physical volume "' + self.secondary + '" successfully created', info)
         if a:
             print('secondary_pvcreate successfully')
             status = True
@@ -477,9 +491,9 @@ class StripOperation():
     def stripvol_check(self):
         status = False
         stripcheck_cmd = f'lsblk'
-        stdin,stdout,stderr = self.obj_ssh.obj_SSHClient.exec_command(stripcheck_cmd)
-        info = str(stdout.read(),encoding='utf-8')
-        a = re.findall(r'vgtest-lvtest',info)
+        stdin, stdout, stderr = self.obj_ssh.obj_SSHClient.exec_command(stripcheck_cmd)
+        info = str(stdout.read(), encoding='utf-8')
+        a = re.findall(r'vgtest-lvtest', info)
         if len(a) == 2:
             print('strip check successfully')
             status = True
@@ -506,8 +520,9 @@ class StripOperation():
             status = False
             return status
 
+
 class MirrorOperation():
-    def __init__(self,obj_ssh):
+    def __init__(self, obj_ssh,yaml_info):
         self.secondary = yaml_info['disk partition']['secondary']
         self.primary = yaml_info['disk partition']['primary']
         self.mirrorvolsize = yaml_info['mirror vol']['mirrorvolsize']
@@ -579,11 +594,11 @@ class MirrorOperation():
                 pvremove_cmd = f'pvremove {self.primary}'
                 stdin, stdout, stderr = self.obj_ssh.obj_SSHClient.exec_command(pvremove_cmd)
                 info = str(stdout.read(), encoding='utf-8')
-                c = re.findall(r'Labels on physical volume "'+self.primary+'" successfully wiped', info)
+                c = re.findall(r'Labels on physical volume "' + self.primary + '" successfully wiped', info)
                 pvremove_cmd_1 = f'pvremove {self.secondary}'
                 stdin, stdout, stderr = self.obj_ssh.obj_SSHClient.exec_command(pvremove_cmd_1)
                 info2 = str(stdout.read(), encoding='utf-8')
-                d = re.findall(r'Labels on physical volume "'+self.secondary+'" successfully wiped', info2)
+                d = re.findall(r'Labels on physical volume "' + self.secondary + '" successfully wiped', info2)
                 if c and d:
                     print('pvremove successfully')
                     print('the program ends')
@@ -599,3 +614,6 @@ class MirrorOperation():
                 return status
         else:
             return status
+
+if __name__ == "__main__":
+    pass
