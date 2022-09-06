@@ -1,8 +1,10 @@
 import logging
 import time
+import subprocess
 import datetime
 import paramiko
 import yaml
+import operation_local
 from operation import MainOperation
 from operation import MirrorOperation
 from operation import StripOperation
@@ -50,94 +52,78 @@ def log():
 
 def main():
     yaml_info = yaml_read()
-    ip = yaml_info['node']['ip']
-    passwd = yaml_info['node']['password']
-    log()
+    if yaml_info['node']['ip'] is True and yaml_info['node']['password'] is True:
+        ip = yaml_info['node']['ip']
+        passwd = yaml_info['node']['password']
+        log()
 
-    obj_ssh = Ssh(ip, passwd)
-    main_operation_obj = MainOperation(obj_ssh,yaml_info)
-    thin_operation_obj = ThinOperation(obj_ssh,yaml_info)
-    strip_operation_obj = StripOperation(obj_ssh,yaml_info)
-    mirror_operation_obj = MirrorOperation(obj_ssh,yaml_info)
-    lvm_operation = Lvm2Operation(obj_ssh)
+        obj_ssh = Ssh(ip, passwd)
+        main_operation_obj = MainOperation(obj_ssh,yaml_info)
+        thin_operation_obj = ThinOperation(obj_ssh,yaml_info)
+        strip_operation_obj = StripOperation(obj_ssh,yaml_info)
+        mirror_operation_obj = MirrorOperation(obj_ssh,yaml_info)
+        lvm_operation = Lvm2Operation(obj_ssh)
 
-    # if not install_lvm2(obj_ssh):
-    #     exit()
-    # time.sleep(1)
-    # if not main_operation_obj.pv_operation():
-    #     exit()
-    # time.sleep(1)
-    # if not main_operation_obj.vg_operation():
-    #     exit()
-    # time.sleep(1)
-    # if not main_operation_obj.lv_operation():
-    #     exit()
-    # time.sleep(1)
-    # if not main_operation_obj.delete_operation():
-    #     exit()
-    # time.sleep(1)
-    # if not thin_operation_obj.thinpool_create():        #bug
-    #     exit()
-    # time.sleep(1)
-    # if not thin_operation_obj.thinvol_create():
-    #     exit()
-    # time.sleep(1)
-    # if not thin_operation_obj.extend_operation():
-    #     exit()
-    # time.sleep(1)
-    # if not thin_operation_obj.reduce_operation():
-    #     exit()
-    # time.sleep(1)
-    # if not thin_operation_obj.snapshot_create():
-    #     exit()
-    # time.sleep(1)
-    # if not thin_operation_obj.delete_operation():
-    #     exit()
-    # time.sleep(1)
-    # if not strip_operation_obj.stripvol_create():
-    #     exit()
-    # time.sleep(1)
-    # if not strip_operation_obj.stripvol_check():
-    #     exit()
-    # time.sleep(1)
-    # if not strip_operation_obj.delete_operation():
-    #     exit()
-    # time.sleep(1)
-    # if not mirror_operation_obj.mirrorvol_create():
-    #     exit()
-    # time.sleep(1)
-    # if not mirror_operation_obj.mirrorvol_check():
-    #     exit()
-    # time.sleep(1)
-    # if not mirror_operation_obj.delete_operation():
-    #     exit()
+        fun_list = ['lvm_operation.install_lvm2'
+            ,'main_operation_obj.pv_operation'
+            , 'main_operation_obj.vg_operation'
+            , 'main_operation_obj.lv_operation'
+            , 'main_operation_obj.delete_operation'
+            , 'thin_operation_obj.thinpool_create'
+            , 'thin_operation_obj.thinvol_create'
+            , 'thin_operation_obj.extend_operation'
+            , 'thin_operation_obj.reduce_operation'
+            , 'thin_operation_obj.snapshot_create'
+            , 'thin_operation_obj.delete_operation'
+            , 'strip_operation_obj.stripvol_create'
+            , 'strip_operation_obj.stripvol_check'
+            , 'strip_operation_obj.delete_operation'
+            , 'mirror_operation_obj.mirrorvol_create'
+            , 'mirror_operation_obj.mirrorvol_check'
+            , 'mirror_operation_obj.delete_operation']
 
-    fun_list = ['lvm_operation.install_lvm2'
-        ,'main_operation_obj.pv_operation'
-        , 'main_operation_obj.vg_operation'
-        , 'main_operation_obj.lv_operation'
-        , 'main_operation_obj.delete_operation'
-        , 'thin_operation_obj.thinpool_create'
-        , 'thin_operation_obj.thinvol_create'
-        , 'thin_operation_obj.extend_operation'
-        , 'thin_operation_obj.reduce_operation'
-        , 'thin_operation_obj.snapshot_create'
-        , 'thin_operation_obj.delete_operation'
-        , 'strip_operation_obj.stripvol_create'
-        , 'strip_operation_obj.stripvol_check'
-        , 'strip_operation_obj.delete_operation'
-        , 'mirror_operation_obj.mirrorvol_create'
-        , 'mirror_operation_obj.mirrorvol_check'
-        , 'mirror_operation_obj.delete_operation']
+        for i in fun_list:
+            func = eval(i)
+            stats = func()
+            if stats is True:
+                pass
+            else:
+                break
+    else:
+        ip = yaml_info['node']['ip']
+        passwd = yaml_info['node']['password']
+        log()
 
-    for i in fun_list:
-        func = eval(i)
-        stats = func()
-        if stats is True:
-            pass
-        else:
-            break
+        local_main_operation_obj = operation_local.MainOperation(yaml_info)
+        local_thin_operation_obj = operation_local.ThinOperation(yaml_info)
+        local_strip_operation_obj = operation_local.StripOperation(yaml_info)
+        local_mirror_operation_obj = operation_local.MirrorOperation(yaml_info)
+        local_lvm_operation = operation_local.Lvm2Operation()
 
+        fun_list = ['local_lvm_operation.install_lvm2'
+            ,'local_main_operation_obj.pv_operation'
+            , 'local_main_operation_obj.vg_operation'
+            , 'local_main_operation_obj.lv_operation'
+            , 'local_main_operation_obj.delete_operation'
+            , 'local_thin_operation_obj.thinpool_create'
+            , 'local_thin_operation_obj.thinvol_create'
+            , 'local_thin_operation_obj.extend_operation'
+            , 'local_thin_operation_obj.reduce_operation'
+            , 'local_thin_operation_obj.snapshot_create'
+            , 'local_thin_operation_obj.delete_operation'
+            , 'local_strip_operation_obj.stripvol_create'
+            , 'local_strip_operation_obj.stripvol_check'
+            , 'local_strip_operation_obj.delete_operation'
+            , 'local_mirror_operation_obj.mirrorvol_create'
+            , 'local_mirror_operation_obj.mirrorvol_check'
+            , 'local_mirror_operation_obj.delete_operation']
 
+        for i in fun_list:
+            func = eval(i)
+            stats = func()
+            if stats is True:
+                pass
+            else:
+                break
 if __name__ == "__main__":
     main()
