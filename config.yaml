@@ -1,0 +1,24 @@
+node:
+  ip: 10.203.1.101
+  password: password
+disk partition:
+  primary: /dev/sdb
+  secondary: /dev/sdc
+basic operation:
+  lvname: lvtest
+  vgsize: 5G
+  lvsize: 2G
+thin vol:
+  thinpoolsize: 2G  #注意此处填写的大小应大于vg组的剩余空间
+  thinvolsize: 1G
+  poolextendsize: 1G
+  volextendsize: 1G
+  volreducesize: 1G #注意此处填写的大小应大于vg组的剩余空间
+strip vol:
+  stripvolsize: 6G
+  stripnumbers: 2
+  stripsize: 64
+mirror vol:
+  mirrorvolsize: 2G
+  datavol: /dev/sdb
+  replicavol: /dev/sdc
