@@ -45,9 +45,9 @@ class Ssh:
             logging.info('  ssh连接失败')
 
     def exec_cmd(self,cmd):
-        self.obj_SSHClient.exec_command(f'{cmd}')
-        stdin, stdout, stderr = self.obj_SSHClient.exec_command(f'{cmd}')
-        # data = stdout.read()
+        self.obj_SSHClient.exec_command(cmd)
+        stdin, stdout, stderr = self.obj_SSHClient.exec_command(cmd)
+        data = stdout.read()
         # if len(data) > 0:
         #     data = data.decode() if isinstance(data, bytes) else data
         #     return data
@@ -56,7 +56,9 @@ class Ssh:
             err = err.decode() if isinstance(err, bytes) else err
             print(f'{cmd} failed')
             log_data = f"{cmd} - 'successfully'"
+            log_data2 = f"{cmd} - result:{data}"
             Log().logger.info(log_data)
+            Log().logger.info(log_data2)
             return False
         else:
             print(f'{cmd} successfully')
@@ -79,7 +81,9 @@ class ExecuteLocally:
         if result.returncode == 0 :
             print(f'{cmd} successfully')
             log_data = f"{cmd} - 'successfully'"
+            log_data2 = f"{cmd} - result:{result}"
             Log().logger.info(log_data)
+            Log().logger.info(log_data2)
             return True
         else:
             print(f'{cmd} failed')
@@ -93,11 +97,11 @@ class MainOperation:
         self.yaml_obj = YamlRead()
         self.yaml_obj_status = self.yaml_obj.yaml_status
         self.yaml_info_list = self.yaml_obj.yaml_info
-        self.Lvm2Operation_obj = commands.Lvm2Operation_cmds()
-        self.MainOperation_obj = commands.MainOperation_cmds(self.yaml_info_list)
-        self.ThinOperation_obj = commands.ThinOperation_cmds(self.yaml_info_list)
-        self.StripOperation_obj = commands.StripOperation_cmds(self.yaml_info_list)
-        self.MirrorOperation_obj = commands.MirrorOperation_cmds(self.yaml_info_list)
+        self.Lvm2Operation_obj = commands.Lvm2OperationCmds()
+        self.MainOperation_obj = commands.MainOperationCmds(self.yaml_info_list)
+        self.ThinOperation_obj = commands.ThinOperationCmds(self.yaml_info_list)
+        self.StripOperation_obj = commands.StripOperationCmds(self.yaml_info_list)
+        self.MirrorOperation_obj = commands.MirrorOperationCmds(self.yaml_info_list)
         self.ssh_obj = Ssh(self.yaml_info_list['node']['ip'],self.yaml_info_list['node']['password'])
         self.sub_obj = ExecuteLocally()
         self.fun_name_list = []
@@ -150,7 +154,7 @@ class Log(object):
     @staticmethod
     def set_handler(logger):
         fh = logging.FileHandler('./UpgradeTestingLog', mode='a')
-        fh.setLevel(logging.DEBUG)  # 输出到file的log等级的开关
+        fh.setLevel(logging.DEBUG)
         formatter = logging.Formatter("%(asctime)s - %(levelname)s - %(message)s")
         fh.setFormatter(formatter)
         logger.addHandler(fh)
