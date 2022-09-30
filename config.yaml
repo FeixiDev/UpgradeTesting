@@ -1,6 +1,6 @@
 node:
-  ip: 10.203.1.101
-  password: password
+  ip:
+  password:
 disk partition:
   primary: /dev/sdb
   secondary: /dev/sdc
